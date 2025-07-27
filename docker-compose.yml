@@ -1,0 +1,64 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    image: nginx/nginx
+    container_name: nginx
+    ports:
+      - 8080:8080
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./app/:/var/www/html/
+    restart: unless-stopped
+    networks:
+      - nginx-phpfpm-net
+  phpfpm:
+    build:
+      context: .
+      dockerfile: ./phpfpm/Dockerfile
+    image: phpfpm/phpfpm
+    container_name: phpfpm
+    volumes:
+      - ./phpfpm/www.conf:/usr/local/etc/php-fpm.d/www.conf
+      - ./app/:/var/www/html/
+    expose:
+      - 9000
+    restart: unless-stopped
+    networks:
+      - nginx-phpfpm-net
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prom_data:/prometheus
+    networks:
+      - nginx-phpfpm-net
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+    networks:
+      - nginx-phpfpm-net
+
+volumes:
+  prom_data:
+
+networks:
+  nginx-phpfpm-net:
+    name: nginx-phpfpm-net
+    driver: bridge
