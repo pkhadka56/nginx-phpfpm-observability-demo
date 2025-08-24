@@ -38,6 +38,18 @@ services:
     restart: unless-stopped
     networks:
       - nginx-phpfpm-net
+
+  phpfpm-exporter:
+    image: hipages/php-fpm_exporter:2.2.0
+    container_name: phpfpm-exporter
+    ports:
+      - 9253
+    environment:
+      PHP_FPM_SCRAPE_URI: "tcp://phpfpm:9000/status"
+      PHP_FPM_LOG_LEVEL: "error"
+    networks:
+      - nginx-phpfpm-net
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
